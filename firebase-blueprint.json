@@ -1,0 +1,82 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information including role for access control.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "customer"] },
+        "phoneNumber": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Pet": {
+      "title": "Pet",
+      "description": "Information about a customer's pet.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "name": { "type": "string" },
+        "species": { "type": "string" },
+        "breed": { "type": "string" },
+        "age": { "type": "number" },
+        "notes": { "type": "string" }
+      },
+      "required": ["ownerId", "name", "species"]
+    },
+    "Appointment": {
+      "title": "Appointment",
+      "description": "A scheduled service for a pet.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customerId": { "type": "string" },
+        "petId": { "type": "string" },
+        "serviceId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "time": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "completed", "cancelled"] },
+        "price": { "type": "number" },
+        "paymentStatus": { "type": "string", "enum": ["pending", "paid"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["customerId", "petId", "serviceId", "date", "time", "status"]
+    },
+    "Service": {
+      "title": "Service",
+      "description": "Available pet shop services.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "duration": { "type": "number" },
+        "description": { "type": "string" }
+      },
+      "required": ["name", "price"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/pets/{petId}": {
+      "schema": "Pet",
+      "description": "Pet registry"
+    },
+    "/appointments/{appointmentId}": {
+      "schema": "Appointment",
+      "description": "Service appointments"
+    },
+    "/services/{serviceId}": {
+      "schema": "Service",
+      "description": "Available services"
+    }
+  }
+}

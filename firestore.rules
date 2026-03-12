@@ -1,0 +1,119 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required, email format)
+    //   - displayName: string (optional)
+    //   - role: string (required, 'admin' or 'customer')
+    //   - phoneNumber: string (optional)
+    //   - createdAt: timestamp (optional)
+    //
+    // Collection: pets
+    // Document ID: {petId}
+    // Fields:
+    //   - ownerId: string (required)
+    //   - name: string (required)
+    //   - species: string (required)
+    //   - breed: string (optional)
+    //   - age: number (optional)
+    //   - notes: string (optional)
+    //
+    // Collection: appointments
+    // Document ID: {appointmentId}
+    // Fields:
+    //   - customerId: string (required)
+    //   - petId: string (required)
+    //   - serviceId: string (required)
+    //   - date: string (required, YYYY-MM-DD)
+    //   - time: string (required, HH:mm)
+    //   - status: string (required, 'pending', 'confirmed', 'completed', 'cancelled')
+    //   - price: number (optional)
+    //   - paymentStatus: string (optional, 'pending', 'paid')
+    //   - createdAt: timestamp (optional)
+    //
+    // Collection: services
+    // Document ID: {serviceId}
+    // Fields:
+    //   - name: string (required)
+    //   - price: number (required)
+    //   - duration: number (optional)
+    //   - description: string (optional)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "snegs.adm@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role']) &&
+             data.uid is string &&
+             data.email is string &&
+             data.role in ['admin', 'customer'];
+    }
+
+    function isValidPet(data) {
+      return data.keys().hasAll(['ownerId', 'name', 'species']) &&
+             data.ownerId is string &&
+             data.name is string &&
+             data.species is string;
+    }
+
+    function isValidAppointment(data) {
+      return data.keys().hasAll(['customerId', 'petId', 'serviceId', 'date', 'time', 'status']) &&
+             data.customerId is string &&
+             data.petId is string &&
+             data.serviceId is string &&
+             data.status in ['pending', 'confirmed', 'completed', 'cancelled'];
+    }
+
+    function isValidService(data) {
+      return data.keys().hasAll(['name', 'price']) &&
+             data.name is string &&
+             data.price is number;
+    }
+
+    // Rules
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && (isOwner(userId) || isAdmin());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && (isOwner(userId) || isAdmin());
+    }
+
+    match /pets/{petId} {
+      allow read: if isAuthenticated() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidPet(request.resource.data) && (request.resource.data.ownerId == request.auth.uid || isAdmin());
+      allow update: if isAuthenticated() && isValidPet(request.resource.data) && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow delete: if isAuthenticated() && (resource.data.ownerId == request.auth.uid || isAdmin());
+    }
+
+    match /appointments/{appointmentId} {
+      allow read: if isAuthenticated() && (resource.data.customerId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidAppointment(request.resource.data) && (request.resource.data.customerId == request.auth.uid || isAdmin());
+      allow update: if isAuthenticated() && isValidAppointment(request.resource.data) && (resource.data.customerId == request.auth.uid || isAdmin());
+    }
+
+    match /services/{serviceId} {
+      allow read: if true; // Publicly readable
+      allow write: if isAdmin();
+    }
+  }
+}

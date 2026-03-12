@@ -1,0 +1,7 @@
+{
+  "name": "VMC PET",
+  "description": "Sistema integrado para petshop com agendamento, gestão de serviços, controle de caixa e pagamentos online.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
